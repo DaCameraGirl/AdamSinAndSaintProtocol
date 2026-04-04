@@ -1,3 +1,16 @@
+<div align="center">
+
+# ⚔️ Adam Sin & Saint Protocol  
+### Dual‑Chain Forensic Clarity Engine for a Single Owner  
+**BTC + ETH • ECC‑Signed Reports • Rupture Detection • Myth‑Wrapped Security**
+
+<img src="https://img.shields.io/badge/Chain-Bitcoin-orange?style=for-the-badge" />
+<img src="https://img.shields.io/badge/Chain-Ethereum-6f3ff5?style=for-the-badge" />
+<img src="https://img.shields.io/badge/Integrity-ECC--SHA512-2ea44f?style=for-the-badge" />
+<img src="https://img.shields.io/badge/Scope-Owner%20Only-ff69b4?style=for-the-badge" />
+
+</div>
+
 # AdamSinAndSaintProtocol
 Dual‑chain forensic clarity engine for a single owner (BTC + ETH).
 
