@@ -1,0 +1,10 @@
+{
+  "owner": {
+    "id": "owner-1",
+    "label": "Primary Owner"
+  },
+  "events": [],
+  "ruptures": [],
+  "generatedAt": "2026-04-04T00:00:00Z",
+  "version": "0.1.0"
+}
