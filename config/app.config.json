@@ -1,0 +1,6 @@
+{
+  "appName": "Adam Sin & Saint Protocol",
+  "version": "0.1.0",
+  "environment": "development",
+  "reportOutput": "./reports"
+}
