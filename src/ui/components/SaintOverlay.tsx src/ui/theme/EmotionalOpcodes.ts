@@ -1,21 +1,28 @@
-export const EmotionalOpcodes = {
-  background: "#0d0d0d",
-  text: "#f2f2f2",
-  accent: "#ff0066",
-  glow: "0 0 12px rgba(255, 0, 102, 0.6)",
+import React from "react";
+import { EmotionalOpcodes } from "../theme/EmotionalOpcodes";
 
-  states: {
-    idle: "#666",
-    active: "#ff0066",
-    rupture: "#ff3333",
-    saint: "#33ffcc"
-  },
+export function SaintOverlay() {
+  return (
+    <div
+      style={{
+        ...EmotionalOpcodes.overlay,
+        color: EmotionalOpcodes.text,
+        boxShadow: EmotionalOpcodes.glow,
+        margin: "40px",
+        textAlign: "center"
+      }}
+    >
+      <h1 style={{ color: EmotionalOpcodes.accent }}>
+        Adam Sin & Saint Protocol
+      </h1>
 
-  overlay: {
-    border: "1px solid rgba(255, 0, 102, 0.4)",
-    padding: "20px",
-    borderRadius: "12px",
-    background: "rgba(0, 0, 0, 0.6)",
-    backdropFilter: "blur(6px)"
-  }
-};
+      <p style={{ marginTop: "10px", color: EmotionalOpcodes.states.saint }}>
+        UI Layer Active — Emotional Opcodes Loaded
+      </p>
+
+      <p style={{ marginTop: "10px", color: EmotionalOpcodes.states.idle }}>
+        Awaiting Engine Signal…
+      </p>
+    </div>
+  );
+}
