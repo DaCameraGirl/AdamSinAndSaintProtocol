@@ -1,31 +1,46 @@
 import React from "react";
-import { EmotionalOpcodes } from "../theme/EmotionalOpcodes";
 import mockReport from "../mock-report.json";
+import { EmotionalOpcodes } from "../theme/EmotionalOpcodes";
 
 export function SaintOverlay() {
+  const ruptures = mockReport.ruptures || [];
+
   return (
-    <div
+    <main
       style={{
-        ...EmotionalOpcodes.overlay,
-        color: EmotionalOpcodes.text,
-        boxShadow: EmotionalOpcodes.glow,
-        margin: "40px",
-        textAlign: "center"
+        maxWidth: 960,
+        margin: "0 auto",
+        padding: "2rem",
+        fontFamily: "Inter, system-ui, sans-serif"
       }}
     >
-      <h1 style={{ color: EmotionalOpcodes.accent }}>
-        Adam Sin & Saint Protocol
-      </h1>
+      <h1 style={{ color: EmotionalOpcodes.accent }}>Saint Overlay</h1>
+      <p>Forensic timeline preview for owner: {mockReport.owner?.label ?? "Unknown"}</p>
 
-      <p style={{ marginTop: "10px", color: EmotionalOpcodes.states.saint }}>
-        UI Layer Active — Emotional Opcodes Loaded
-      </p>
-
-      <p style={{ marginTop: "10px", color: EmotionalOpcodes.states.idle }}>
-        Awaiting Engine Signal…
-      </p>
-
-      <div style={{ marginTop: "20px", color: EmotionalOpcodes.text }}>
+      <section
+        style={{
+          background: EmotionalOpcodes.panel,
+          padding: "1rem",
+          borderRadius: 12,
+          marginTop: "1rem"
+        }}
+      >
+        <h2>Rupture Events</h2>
+        {ruptures.length === 0 ? (
+          <p>No rupture events detected in the sample report.</p>
+        ) : (
+          <ul>
+            {ruptures.map((rupture: any) => (
+              <li key={rupture.id}>
+                [{rupture.severity}] {rupture.description}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </main>
+  );
+}codes.text }}>
         <pre style={{ textAlign: "left", whiteSpace: "pre-wrap" }}>
           {JSON.stringify(mockReport, null, 2)}
         </pre>
