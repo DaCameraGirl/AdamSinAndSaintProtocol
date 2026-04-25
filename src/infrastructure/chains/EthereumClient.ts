@@ -51,11 +51,12 @@ export class EthereumClient {
   }
 
   private normalizeTransactions(owner: Owner, txs: EtherscanTx[]): Event[] {
-    const ownerAddresses = new Set(owner.ethAddresses.map((a: string) => a.toLowerCase()));
+    const ownerAddresses = new Set(
+      owner.ethAddresses.map((a: string) => a.toLowerCase())
+    );
 
     return txs.map((tx) => {
       const from = tx.from?.toLowerCase();
-      const to = tx.to?.toLowerCase();
       const isOutgoing = ownerAddresses.has(from);
 
       return {
@@ -67,10 +68,9 @@ export class EthereumClient {
         txHash: tx.hash,
         timestamp: Number(tx.timeStamp) || 0,
         type: isOutgoing ? "TRANSFER_OUT" : "TRANSFER_IN",
-       metadata: {
-  value: tx.value,
-  valueWei: tx.value
-}
+        metadata: {
+          value: tx.value,
+          valueWei: tx.value
         }
       };
     });
