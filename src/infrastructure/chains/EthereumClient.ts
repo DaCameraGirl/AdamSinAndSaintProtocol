@@ -67,8 +67,10 @@ export class EthereumClient {
         txHash: tx.hash,
         timestamp: Number(tx.timeStamp) || 0,
         type: isOutgoing ? "TRANSFER_OUT" : "TRANSFER_IN",
-        metadata: {
-          valueWei: tx.value
+       metadata: {
+  value: tx.value,
+  valueWei: tx.value
+}
         }
       };
     });
