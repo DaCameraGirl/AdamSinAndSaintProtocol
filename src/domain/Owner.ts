@@ -4,3 +4,4 @@ export interface Owner {
   btcAddresses: string[];
   ethAddresses: string[];
 }
+
