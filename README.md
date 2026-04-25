@@ -119,5 +119,5 @@ Erasure forbidden by culture, not by law.
 
 ## ✨ Author
 
-**Angela Walker**  
+**Angela Hudson**  
 Architect of clarity engines, rupture detection, and emotional protocol overlays.
