@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⚔️ Adam Sin & Saint Protocol
+# ⚔️ Adam Sin & Saint Protocol 
 
 ### Dual‑Chain Forensic Clarity Engine
 
