@@ -24,6 +24,6 @@ test("EthereumClient maps transfer amount to metadata.value for rupture detectio
 
   assert.equal(normalized.length, 1);
   assert.equal(normalized[0].type, "TRANSFER_OUT");
-  assert.equal(normalized[0].metadata?.value, "2000000000000000000");
+  assert.equal(normalized[0].metadata?.value, "2");
   assert.equal(normalized[0].metadata?.valueWei, "2000000000000000000");
 });

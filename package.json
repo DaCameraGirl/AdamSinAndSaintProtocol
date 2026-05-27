@@ -4,9 +4,12 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "dev": "vite",
+    "build": "vite build",
+    "build:node": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --test dist/tests/placeholder.test.js"
+    "preview": "vite preview",
+    "test": "tsc -p tsconfig.json --noEmit --outDir dist && node --test dist/tests/*.test.js"
   },
   "dependencies": {
     "axios": "^1.9.0",
@@ -17,6 +20,8 @@
     "@types/node": "^22.15.3",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
-    "typescript": "^5.8.3"
+    "@vitejs/plugin-react": "^6.0.2",
+    "typescript": "^5.8.3",
+    "vite": "^8.0.14"
   }
 }
