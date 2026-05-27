@@ -4,13 +4,16 @@
 
 ### Dual‑Chain Forensic Clarity Engine
 
+[![Live App](https://img.shields.io/badge/🌐_Live_App-https://dacameragirl.github.io/AdamSinAndSaintProtocol/-blue?style=for-the-badge)](https://dacameragirl.github.io/AdamSinAndSaintProtocol/)
+
 **BTC + ETH • ECC‑Signed Reports • Rupture Detection • Analyst Workflow**
 
 <img src="https://img.shields.io/badge/Chain-Bitcoin-orange?style=for-the-badge" />
 <img src="https://img.shields.io/badge/Chain-Ethereum-6f3ff5?style=for-the-badge" />
 <img src="https://img.shields.io/badge/Integrity-ECC--SHA512-2ea44f?style=for-the-badge" />
 <img src="https://img.shields.io/badge/Scope-Owner%20Only-ff69b4?style=for-the-badge" />
-<img src="https://img.shields.io/badge/Status-v0.2.0-2ea44f?style=for-the-badge" />
+<img src="https://img.shields.io/badge/Status-v1.0.0-2ea44f?style=for-the-badge" />
+<img src="https://img.shields.io/github/actions/workflow/status/DaCameraGirl/AdamSinAndSaintProtocol/test.yml?label=Tests&style=for-the-badge" />
 
 </div>
 
@@ -19,6 +22,8 @@
 **Adam Sin & Saint Protocol** is a single-owner crypto forensic review tool. Enter BTC and/or ETH addresses and it produces a signed, ECC‑protected forensic report with event timeline, asset inventory, rupture flags, and analyst notes — all from the browser.
 
 It is not a scanner, drainer, or brute-force tool. It analyzes only the addresses the owner provides.
+
+<img src="docs/demo.gif" alt="Adam Sin & Saint demo — address input, forensic findings, rupture cards, signed report export" width="100%" />
 
 ---
 
