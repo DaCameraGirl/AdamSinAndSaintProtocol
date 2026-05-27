@@ -43,6 +43,7 @@ function App() {
   const [filterChain, setFilterChain] = useState<string>("all");
   const [filterDirection, setFilterDirection] = useState<string>("all");
   const [filterSeverity, setFilterSeverity] = useState<string>("all");
+  const [notes, setNotes] = useState("");
 
   useEffect(() => {
     saveCases(savedCases);
@@ -99,6 +100,7 @@ function App() {
     setSignedReport(c.signedReport);
     setActiveTab("overview");
     setError("");
+    setNotes("");
   }
 
   function deleteCase(id: string, e: React.MouseEvent) {
@@ -108,7 +110,8 @@ function App() {
 
   function exportReport() {
     if (!report) return;
-    const blob = new Blob([JSON.stringify({ ...report, signing: signedReport }, null, 2)], { type: "application/json" });
+    const exportData = { ...report, signing: signedReport, analystNotes: notes || "" };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -281,6 +284,8 @@ function App() {
               report={{ ...report, events: filteredEvents, ruptures: filteredRuptures }}
               signedReport={signedReport}
               activeTab={activeTab}
+              notes={notes}
+              onNotesChange={setNotes}
             />
           </>
         )}

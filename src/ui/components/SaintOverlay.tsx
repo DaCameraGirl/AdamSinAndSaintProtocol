@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { EmotionalOpcodes } from "../theme/EmotionalOpcodes";
 
 const severityColor: Record<string, string> = { HIGH: "#ef4444", MEDIUM: "#f59e0b", LOW: "#22c55e" };
+const NUM_RISK = { HIGH: 3, MEDIUM: 2, LOW: 1 };
 
 function fmtTime(ts: number) {
   if (!ts) return "—";
@@ -10,15 +11,18 @@ function fmtTime(ts: number) {
 
 function DisclaimerBar() {
   return (
-    <div style={{
-      background: "#1a1500", border: "1px solid #f59e0b", borderRadius: 8, padding: "10px 14px",
-      marginBottom: 16, fontSize: 12, color: "#f59e0b"
-    }}>
-      <strong>⚠ Data Source Disclaimer:</strong> All data is sourced from public block explorers
-      (<strong>mempool.space</strong> for BTC, <strong>etherscan.io</strong> for ETH).
-      This is <strong>explorer-derived transaction analysis</strong> with heuristic suspicion layers,
-      not forensic truth. Rupture flags are <strong>signals, not verdicts</strong>.
-      Always verify findings against a full node before drawing conclusions.
+    <div style={{ background: "#1a1500", border: "1px solid #f59e0b", borderRadius: 8, padding: "12px 14px", marginBottom: 16, fontSize: 12, color: "#f59e0b" }}>
+      <strong>⚠ Data Source & Interpretation Disclaimer</strong>
+      <div style={{ marginTop: 6, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        <div style={{ padding: "6px 8px", background: "#0f0f1a", borderRadius: 4 }}>
+          <strong style={{ color: "#22c55e" }}>✓ Source Facts</strong>
+          <div style={{ marginTop: 2, color: "#94a3b8" }}>Raw transactions, timestamps, values, and addresses sourced from <strong>mempool.space</strong> (BTC) and <strong>etherscan.io</strong> (ETH). These are explorer-derived records, not full-node verified data.</div>
+        </div>
+        <div style={{ padding: "6px 8px", background: "#0f0f1a", borderRadius: 4 }}>
+          <strong style={{ color: "#f59e0b" }}>⚠ Heuristic Conclusions</strong>
+          <div style={{ marginTop: 2, color: "#94a3b8" }}>Rupture flags, severity ratings, and "why it matters" descriptions are <strong>algorithmic suspicions</strong> based on configurable thresholds — not forensic verdicts. Always verify findings independently.</div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -38,10 +42,7 @@ function exportCSV(report: any) {
     const val = e.metadata?.tokenSymbol
       ? `${(parseFloat(e.metadata.value) / Math.pow(10, parseInt(e.metadata.tokenDecimal) || 18)).toFixed(4)} ${e.metadata.tokenSymbol}`
       : `${e.metadata?.value ?? "—"} ${e.chain === "bitcoin" ? "BTC" : "ETH"}`;
-    rows.push([
-      e.type, e.chain, fmtTime(e.timestamp), e.from || "", e.to || "",
-      `"${val}"`, e.metadata?.tokenSymbol || "native", e.txHash
-    ].join(","));
+    rows.push([e.type, e.chain, fmtTime(e.timestamp), e.from || "", e.to || "", `"${val}"`, e.metadata?.tokenSymbol || "native", e.txHash].join(","));
   }
   for (const r of report.ruptures || []) {
     rows.push(["RUPTURE", r.chain, fmtTime(r.timestamp), "", "", `"${r.severity}: ${r.description}"`, "", r.eventId].join(","));
@@ -53,12 +54,58 @@ function exportCSV(report: any) {
   URL.revokeObjectURL(url);
 }
 
-export function SaintOverlay({ report, signedReport, activeTab }: { report: any; signedReport: any; activeTab: string }) {
+function computeScore(ruptures: any[]) {
+  if (!ruptures || ruptures.length === 0) return { level: "Low", color: "#22c55e", description: "No significant concerns detected", detail: "No rupture events flagged — routine activity pattern" };
+  let score = 0;
+  for (const r of ruptures) score += NUM_RISK[r.severity as keyof typeof NUM_RISK] || 0;
+  if (score >= 6) return { level: "High", color: "#ef4444", description: "Multiple high-severity events requiring immediate review", detail: `${ruptures.length} rupture(s) with total risk score ${score}` };
+  if (score >= 3) return { level: "Medium", color: "#f59e0b", description: "Notable patterns detected — investigate flagged events", detail: `${ruptures.length} rupture(s) with total risk score ${score}` };
+  return { level: "Low", color: "#22c55e", description: "Minor or no concerns detected", detail: `${ruptures.length} rupture(s) with total risk score ${score}` };
+}
+
+function EventDrawer({ event, onClose }: { event: any; onClose: () => void }) {
+  if (!event) return null;
+  return (
+    <div style={{
+      position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.6)",
+      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000
+    }} onClick={onClose}>
+      <div style={{
+        background: EmotionalOpcodes.background, border: `1px solid ${EmotionalOpcodes.border}`,
+        borderRadius: 12, padding: "1.5rem", maxWidth: 560, width: "90%", maxHeight: "80vh", overflow: "auto"
+      }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+          <h3 style={{ margin: 0, color: EmotionalOpcodes.accent, fontSize: 16 }}>Event Details</h3>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: EmotionalOpcodes.textMuted, cursor: "pointer", fontSize: 18 }}>✕</button>
+        </div>
+        <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
+          <tbody>
+            {Object.entries(event).map(([key, val]: [string, any]) => (
+              <tr key={key} style={{ borderBottom: `1px solid ${EmotionalOpcodes.border}` }}>
+                <td style={{ padding: "6px 8px", color: EmotionalOpcodes.textMuted, fontWeight: 600, width: "30%", verticalAlign: "top" }}>{key}</td>
+                <td style={{ padding: "6px 8px", color: EmotionalOpcodes.text, wordBreak: "break-all", fontFamily: "monospace", fontSize: 12 }}>
+                  {val === null || val === undefined ? "—" : typeof val === "object" ? JSON.stringify(val, null, 1) : String(val)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+export function SaintOverlay({ report, signedReport, activeTab, notes, onNotesChange }: {
+  report: any; signedReport: any; activeTab: string; notes?: string; onNotesChange?: (v: string) => void;
+}) {
   const s = report.summary || {};
+  const [drawerEvent, setDrawerEvent] = useState<any>(null);
+  const score = computeScore(report.ruptures);
 
   const overviewTab = (
     <TabPanel>
       <DisclaimerBar />
+
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
         <Section title="📊 Summary">
           <Row label="Transactions" value={s.totalTransactions} />
@@ -76,19 +123,35 @@ export function SaintOverlay({ report, signedReport, activeTab }: { report: any;
         </Section>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 16 }}>
-        <Section title="₿ Bitcoin">
-          <div style={{ fontSize: 11, color: "#f59e0b", marginBottom: 8, padding: "4px 8px", background: "#1a1500", borderRadius: 4 }}>
-            Source: mempool.space — explorer data
+      <Section title="🔍 Forensic Concern Score">
+        <div style={{
+          display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
+          border: `1px solid ${score.color}44`, borderRadius: 8, background: `${score.color}11`
+        }}>
+          <div style={{
+            width: 48, height: 48, borderRadius: "50%", background: score.color,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 20, fontWeight: 700, color: "#000", flexShrink: 0
+          }}>
+            {score.level === "High" ? "⚠" : score.level === "Medium" ? "!" : "✓"}
           </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: score.color }}>{score.level} Forensic Concern</div>
+            <div style={{ fontSize: 12, color: EmotionalOpcodes.textMuted, marginTop: 2 }}>{score.description}</div>
+            <div style={{ fontSize: 11, color: EmotionalOpcodes.textMuted, marginTop: 1, fontFamily: "monospace" }}>{score.detail}</div>
+          </div>
+        </div>
+      </Section>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, margin: "16 0" }}>
+        <Section title="₿ Bitcoin">
+          <div style={{ fontSize: 11, color: "#f59e0b", marginBottom: 8, padding: "4px 8px", background: "#1a1500", borderRadius: 4 }}>Source: mempool.space — explorer data</div>
           <Row label="Transactions" value={report.events.filter((e: any) => e.chain === "bitcoin").length} />
           <Row label="Inflow" value={s.byChain?.bitcoin?.inflow?.toFixed(8) || "0"} />
           <Row label="Outflow" value={s.byChain?.bitcoin?.outflow?.toFixed(8) || "0"} />
         </Section>
         <Section title="⟠ Ethereum">
-          <div style={{ fontSize: 11, color: "#f59e0b", marginBottom: 8, padding: "4px 8px", background: "#1a1500", borderRadius: 4 }}>
-            Source: etherscan.io — explorer data
-          </div>
+          <div style={{ fontSize: 11, color: "#f59e0b", marginBottom: 8, padding: "4px 8px", background: "#1a1500", borderRadius: 4 }}>Source: etherscan.io — explorer data</div>
           <Row label="Transactions" value={report.events.filter((e: any) => e.chain === "ethereum").length} />
           <Row label="Inflow" value={s.byChain?.ethereum?.inflow?.toFixed(6) || "0"} />
           <Row label="Outflow" value={s.byChain?.ethereum?.outflow?.toFixed(6) || "0"} />
@@ -131,16 +194,20 @@ export function SaintOverlay({ report, signedReport, activeTab }: { report: any;
   const timelineTab = (
     <TabPanel>
       <p style={{ color: EmotionalOpcodes.textMuted, fontSize: 13, margin: "0 0 12px" }}>
-        {report.events.length} events — sorted chronologically
+        {report.events.length} events — click any row for full details
       </p>
       {report.events.length === 0 ? (
         <p style={{ color: EmotionalOpcodes.textMuted, fontSize: 13 }}>No events found.</p>
       ) : (
         [...report.events].reverse().map((e: any) => (
-          <div key={e.id} style={{
-            borderLeft: `3px solid ${e.type === "TRANSFER_OUT" ? "#ef4444" : "#22c55e"}`,
-            padding: "10px 14px", marginBottom: 8, background: EmotionalOpcodes.panelMuted, borderRadius: 8, fontSize: 13
-          }}>
+          <div key={e.id} onClick={() => setDrawerEvent(e)}
+            style={{
+              borderLeft: `3px solid ${e.type === "TRANSFER_OUT" ? "#ef4444" : "#22c55e"}`,
+              padding: "10px 14px", marginBottom: 8, background: EmotionalOpcodes.panelMuted,
+              borderRadius: 8, fontSize: 13, cursor: "pointer", transition: "background .15s"
+            }}
+            onMouseEnter={(ev) => (ev.currentTarget.style.background = EmotionalOpcodes.panel)}
+            onMouseLeave={(ev) => (ev.currentTarget.style.background = EmotionalOpcodes.panelMuted)}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
               <span style={{ fontWeight: 600 }}>{e.chain === "bitcoin" ? "₿" : "⟠"} {e.type === "TRANSFER_OUT" ? "OUT" : "IN"}</span>
               <span style={{ color: EmotionalOpcodes.textMuted }}>{fmtTime(e.timestamp)}</span>
@@ -154,11 +221,12 @@ export function SaintOverlay({ report, signedReport, activeTab }: { report: any;
               {addrShort(e.from, 10)} → {addrShort(e.to, 10)}
             </div>
             <div style={{ color: EmotionalOpcodes.textMuted, fontSize: 11, marginTop: 2 }}>
-              {e.txHash?.slice(0, 20)}...
+              {e.txHash?.slice(0, 20)}... <span style={{ fontStyle: "italic" }}>click to inspect</span>
             </div>
           </div>
         ))
       )}
+      {drawerEvent && <EventDrawer event={drawerEvent} onClose={() => setDrawerEvent(null)} />}
     </TabPanel>
   );
 
@@ -183,20 +251,11 @@ export function SaintOverlay({ report, signedReport, activeTab }: { report: any;
               }}>{r.severity}</span>
               <span style={{ color: EmotionalOpcodes.textMuted, fontSize: 12 }}>{fmtTime(r.timestamp)}</span>
             </div>
-
             {r.ruleName && (
-              <div style={{ fontSize: 15, fontWeight: 600, color: EmotionalOpcodes.text, marginBottom: 4 }}>
-                {r.ruleName}
-              </div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: EmotionalOpcodes.text, marginBottom: 4 }}>{r.ruleName}</div>
             )}
-            <div style={{ color: EmotionalOpcodes.text, marginBottom: 6 }}>
-              {r.description}
-            </div>
-
-            <div style={{
-              background: "#0a0a12", borderRadius: 6, padding: "10px", marginBottom: 8,
-              display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 16px", fontSize: 12
-            }}>
+            <div style={{ color: EmotionalOpcodes.text, marginBottom: 6 }}>{r.description}</div>
+            <div style={{ background: "#0a0a12", borderRadius: 6, padding: "10px", marginBottom: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 16px", fontSize: 12 }}>
               {r.thresholdDescription && (
                 <div><span style={{ color: EmotionalOpcodes.textMuted }}>Threshold:</span> <span style={{ color: "#f59e0b", fontFamily: "monospace" }}>{r.thresholdDescription}</span></div>
               )}
@@ -210,14 +269,11 @@ export function SaintOverlay({ report, signedReport, activeTab }: { report: any;
                 <div><span style={{ color: EmotionalOpcodes.textMuted }}>Tx Hash:</span> <span style={{ fontFamily: "monospace", fontSize: 11, color: EmotionalOpcodes.textMuted }}>{r.eventId.replace("rupture-", "").slice(0, 18)}...</span></div>
               )}
             </div>
-
             {r.whyItMatters && (
               <div style={{ fontSize: 12, color: "#94a3b8", padding: "6px 8px", background: "#0f0f1a", borderRadius: 4, borderLeft: "2px solid #334155" }}>
-                <span style={{ fontWeight: 600, color: EmotionalOpcodes.textMuted }}>Why it matters: </span>
-                {r.whyItMatters}
+                <span style={{ fontWeight: 600, color: EmotionalOpcodes.textMuted }}>Why it matters: </span>{r.whyItMatters}
               </div>
             )}
-
             <div style={{ color: EmotionalOpcodes.textMuted, fontSize: 11, marginTop: 6 }}>
               {r.chain} · {r.id}
             </div>
@@ -282,8 +338,26 @@ export function SaintOverlay({ report, signedReport, activeTab }: { report: any;
           <Row label="Ruptures" value={report.ruptures.length} />
           <Row label="Assets" value={report.assets.length} />
           <Row label="Data Sources" value={(report.dataSources || []).map((d: any) => d.provider).join(", ")} />
+          <Row label="Forensic Score" value={`${score.level}`} />
         </Section>
       </div>
+
+      <Section title="📝 Analyst Notes">
+        <textarea
+          value={notes || ""}
+          onChange={(e) => onNotesChange?.(e.target.value)}
+          placeholder="Add case notes here — observations, suspicious addresses, follow-up items..."
+          style={{
+            width: "100%", minHeight: 80, padding: "10px 12px", borderRadius: 8,
+            border: `1px solid ${EmotionalOpcodes.border}`, background: EmotionalOpcodes.panelMuted,
+            color: EmotionalOpcodes.text, fontSize: 13, fontFamily: "inherit",
+            boxSizing: "border-box", resize: "vertical"
+          }}
+        />
+        <div style={{ fontSize: 11, color: EmotionalOpcodes.textMuted, marginTop: 4 }}>
+          Notes are saved locally and included in JSON export
+        </div>
+      </Section>
 
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
         <button onClick={() => exportCSV(report)}
@@ -298,7 +372,7 @@ export function SaintOverlay({ report, signedReport, activeTab }: { report: any;
           color: EmotionalOpcodes.textMuted, overflow: "auto", maxHeight: 400, margin: 0,
           border: `1px solid ${EmotionalOpcodes.border}`
         }}>
-          {JSON.stringify({ ...report, signing: signedReport }, null, 2)}
+          {JSON.stringify({ ...report, signing: signedReport, analystNotes: notes || "" }, null, 2)}
         </pre>
       </Section>
     </TabPanel>
