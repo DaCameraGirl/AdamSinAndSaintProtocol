@@ -8,6 +8,21 @@ function fmtTime(ts: number) {
   return new Date(ts * 1000).toLocaleString();
 }
 
+function DisclaimerBar() {
+  return (
+    <div style={{
+      background: "#1a1500", border: "1px solid #f59e0b", borderRadius: 8, padding: "10px 14px",
+      marginBottom: 16, fontSize: 12, color: "#f59e0b"
+    }}>
+      <strong>⚠ Data Source Disclaimer:</strong> All data is sourced from public block explorers
+      (<strong>mempool.space</strong> for BTC, <strong>etherscan.io</strong> for ETH).
+      This is <strong>explorer-derived transaction analysis</strong> with heuristic suspicion layers,
+      not forensic truth. Rupture flags are <strong>signals, not verdicts</strong>.
+      Always verify findings against a full node before drawing conclusions.
+    </div>
+  );
+}
+
 function addrShort(addr: string | undefined, len = 12) {
   if (!addr) return "—";
   return addr.length > len + 3 ? `${addr.slice(0, len)}...` : addr;
@@ -17,11 +32,33 @@ function TabPanel({ children }: { children: React.ReactNode }) {
   return <div>{children}</div>;
 }
 
+function exportCSV(report: any) {
+  const rows: string[] = ["type,chain,timestamp,from,to,value,asset,txHash"];
+  for (const e of report.events || []) {
+    const val = e.metadata?.tokenSymbol
+      ? `${(parseFloat(e.metadata.value) / Math.pow(10, parseInt(e.metadata.tokenDecimal) || 18)).toFixed(4)} ${e.metadata.tokenSymbol}`
+      : `${e.metadata?.value ?? "—"} ${e.chain === "bitcoin" ? "BTC" : "ETH"}`;
+    rows.push([
+      e.type, e.chain, fmtTime(e.timestamp), e.from || "", e.to || "",
+      `"${val}"`, e.metadata?.tokenSymbol || "native", e.txHash
+    ].join(","));
+  }
+  for (const r of report.ruptures || []) {
+    rows.push(["RUPTURE", r.chain, fmtTime(r.timestamp), "", "", `"${r.severity}: ${r.description}"`, "", r.eventId].join(","));
+  }
+  const blob = new Blob([rows.join("\n")], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = `adam-sin-report-${Date.now()}.csv`; a.click();
+  URL.revokeObjectURL(url);
+}
+
 export function SaintOverlay({ report, signedReport, activeTab }: { report: any; signedReport: any; activeTab: string }) {
   const s = report.summary || {};
 
   const overviewTab = (
     <TabPanel>
+      <DisclaimerBar />
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
         <Section title="📊 Summary">
           <Row label="Transactions" value={s.totalTransactions} />
@@ -29,8 +66,8 @@ export function SaintOverlay({ report, signedReport, activeTab }: { report: any;
           <Row label="Total Inflow" value={s.totalInflow} />
           <Row label="Total Outflow" value={s.totalOutflow} />
           <Row label="Ruptures" value={s.ruptureCount} />
-          <Row label="Earliest Activity" value={s.oldestActivity ? fmtTime(s.oldestActivity) : "—"} />
-          <Row label="Latest Activity" value={s.newestActivity ? fmtTime(s.newestActivity) : "—"} />
+          <Row label="Earliest" value={s.oldestActivity ? fmtTime(s.oldestActivity) : "—"} />
+          <Row label="Latest" value={s.newestActivity ? fmtTime(s.newestActivity) : "—"} />
         </Section>
         <Section title="👤 Owner">
           <Row label="Label" value={report.owner?.label} />
@@ -41,11 +78,17 @@ export function SaintOverlay({ report, signedReport, activeTab }: { report: any;
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 16 }}>
         <Section title="₿ Bitcoin">
+          <div style={{ fontSize: 11, color: "#f59e0b", marginBottom: 8, padding: "4px 8px", background: "#1a1500", borderRadius: 4 }}>
+            Source: mempool.space — explorer data
+          </div>
           <Row label="Transactions" value={report.events.filter((e: any) => e.chain === "bitcoin").length} />
           <Row label="Inflow" value={s.byChain?.bitcoin?.inflow?.toFixed(8) || "0"} />
           <Row label="Outflow" value={s.byChain?.bitcoin?.outflow?.toFixed(8) || "0"} />
         </Section>
         <Section title="⟠ Ethereum">
+          <div style={{ fontSize: 11, color: "#f59e0b", marginBottom: 8, padding: "4px 8px", background: "#1a1500", borderRadius: 4 }}>
+            Source: etherscan.io — explorer data
+          </div>
           <Row label="Transactions" value={report.events.filter((e: any) => e.chain === "ethereum").length} />
           <Row label="Inflow" value={s.byChain?.ethereum?.inflow?.toFixed(6) || "0"} />
           <Row label="Outflow" value={s.byChain?.ethereum?.outflow?.toFixed(6) || "0"} />
@@ -61,7 +104,7 @@ export function SaintOverlay({ report, signedReport, activeTab }: { report: any;
         </Section>
       </div>
 
-      <Section title="🔐 Report Integrity">
+      <Section title="🔐 Report Provenance & Integrity">
         <div style={{ fontSize: 13 }}>
           <Row label="Generated" value={report.generatedAt ? new Date(report.generatedAt).toLocaleString() : "—"} />
           <Row label="Version" value={report.version} />
@@ -72,6 +115,14 @@ export function SaintOverlay({ report, signedReport, activeTab }: { report: any;
               <Row label="Public Key" value={signedReport.publicKey} />
             </>
           )}
+          <div style={{ marginTop: 8 }}>
+            <strong style={{ color: EmotionalOpcodes.textMuted, fontSize: 12 }}>Data Sources:</strong>
+            {(report.dataSources || []).map((ds: any, i: number) => (
+              <div key={i} style={{ fontSize: 12, color: EmotionalOpcodes.textMuted, marginTop: 4, padding: "4px 8px", background: EmotionalOpcodes.panelMuted, borderRadius: 4 }}>
+                {ds.chain}: {ds.provider} — retrieved {new Date(ds.retrievalTime).toLocaleTimeString()}
+              </div>
+            ))}
+          </div>
         </div>
       </Section>
     </TabPanel>
@@ -121,19 +172,54 @@ export function SaintOverlay({ report, signedReport, activeTab }: { report: any;
       ) : (
         report.ruptures.map((r: any) => (
           <div key={r.id} style={{
-            borderLeft: `3px solid ${severityColor[r.severity] ?? "#666"}`,
-            padding: "12px 14px", marginBottom: 8, background: EmotionalOpcodes.panelMuted, borderRadius: 8, fontSize: 13
+            border: `1px solid ${severityColor[r.severity]}33`,
+            borderLeft: `4px solid ${severityColor[r.severity] ?? "#666"}`,
+            padding: "14px", marginBottom: 10, background: EmotionalOpcodes.panelMuted, borderRadius: 8, fontSize: 13
           }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
               <span style={{
                 background: severityColor[r.severity], color: "#000", fontWeight: 700,
-                padding: "2px 8px", borderRadius: 4, fontSize: 11
+                padding: "3px 10px", borderRadius: 4, fontSize: 11, letterSpacing: 0.5
               }}>{r.severity}</span>
-              <span style={{ color: EmotionalOpcodes.textMuted }}>{fmtTime(r.timestamp)}</span>
+              <span style={{ color: EmotionalOpcodes.textMuted, fontSize: 12 }}>{fmtTime(r.timestamp)}</span>
             </div>
-            <div style={{ marginBottom: 2 }}>{r.description}</div>
-            <div style={{ color: EmotionalOpcodes.textMuted, fontSize: 12 }}>
-              {r.chain} {r.eventId ? `· ${r.eventId.slice(0, 20)}...` : ""}
+
+            {r.ruleName && (
+              <div style={{ fontSize: 15, fontWeight: 600, color: EmotionalOpcodes.text, marginBottom: 4 }}>
+                {r.ruleName}
+              </div>
+            )}
+            <div style={{ color: EmotionalOpcodes.text, marginBottom: 6 }}>
+              {r.description}
+            </div>
+
+            <div style={{
+              background: "#0a0a12", borderRadius: 6, padding: "10px", marginBottom: 8,
+              display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px 16px", fontSize: 12
+            }}>
+              {r.thresholdDescription && (
+                <div><span style={{ color: EmotionalOpcodes.textMuted }}>Threshold:</span> <span style={{ color: "#f59e0b", fontFamily: "monospace" }}>{r.thresholdDescription}</span></div>
+              )}
+              {r.observedValue && (
+                <div><span style={{ color: EmotionalOpcodes.textMuted }}>Observed:</span> <span style={{ color: "#ef4444", fontFamily: "monospace", fontWeight: 600 }}>{r.observedValue}</span></div>
+              )}
+              {r.counterparty && (
+                <div><span style={{ color: EmotionalOpcodes.textMuted }}>Counterparty:</span> <span style={{ color: EmotionalOpcodes.text }}>{addrShort(r.counterparty, 20)}</span></div>
+              )}
+              {r.eventId && (
+                <div><span style={{ color: EmotionalOpcodes.textMuted }}>Tx Hash:</span> <span style={{ fontFamily: "monospace", fontSize: 11, color: EmotionalOpcodes.textMuted }}>{r.eventId.replace("rupture-", "").slice(0, 18)}...</span></div>
+              )}
+            </div>
+
+            {r.whyItMatters && (
+              <div style={{ fontSize: 12, color: "#94a3b8", padding: "6px 8px", background: "#0f0f1a", borderRadius: 4, borderLeft: "2px solid #334155" }}>
+                <span style={{ fontWeight: 600, color: EmotionalOpcodes.textMuted }}>Why it matters: </span>
+                {r.whyItMatters}
+              </div>
+            )}
+
+            <div style={{ color: EmotionalOpcodes.textMuted, fontSize: 11, marginTop: 6 }}>
+              {r.chain} · {r.id}
             </div>
           </div>
         ))
@@ -185,7 +271,7 @@ export function SaintOverlay({ report, signedReport, activeTab }: { report: any;
               </div>
             </>
           ) : (
-            <p style={{ color: EmotionalOpcodes.textMuted, fontSize: 13 }}>Not signed yet. Run analysis first.</p>
+            <p style={{ color: EmotionalOpcodes.textMuted, fontSize: 13 }}>Not signed yet.</p>
           )}
         </Section>
         <Section title="⚙️ Report Metadata">
@@ -195,7 +281,15 @@ export function SaintOverlay({ report, signedReport, activeTab }: { report: any;
           <Row label="Events" value={report.events.length} />
           <Row label="Ruptures" value={report.ruptures.length} />
           <Row label="Assets" value={report.assets.length} />
+          <Row label="Data Sources" value={(report.dataSources || []).map((d: any) => d.provider).join(", ")} />
         </Section>
+      </div>
+
+      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        <button onClick={() => exportCSV(report)}
+          style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${EmotionalOpcodes.border}`, background: "transparent", color: EmotionalOpcodes.text, fontSize: 13, cursor: "pointer" }}>
+          ⬇ Export CSV
+        </button>
       </div>
 
       <Section title="📄 Raw Report JSON">

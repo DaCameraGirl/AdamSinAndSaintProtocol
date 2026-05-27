@@ -10,4 +10,10 @@ export interface Rupture {
   severity: RuptureSeverity;
   description: string;
   timestamp: number;
+  triggerReason?: string;
+  ruleName?: string;
+  thresholdDescription?: string;
+  observedValue?: string;
+  counterparty?: string;
+  whyItMatters?: string;
 }

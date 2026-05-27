@@ -75,11 +75,60 @@ A shortcut is provided on the desktop — double-click to launch the dev server 
 
 | Tab | Content |
 |---|---|
-| **📊 Overview** | Summary stats, per-chain BTC/ETH breakdown, owner info, ECC signature |
+| **📊 Overview** | Summary stats, per-chain BTC/ETH breakdown, owner info, ECC signature, data source disclaimers |
 | **📜 Timeline** | All events chronologically sorted with direction, value, addresses |
-| **🚨 Ruptures** | All flagged events with color-coded severity (HIGH / MEDIUM / LOW) |
+| **🚨 Ruptures** | All flagged events with color-coded severity (HIGH / MEDIUM / LOW) + per-flag threshold math |
 | **💰 Assets** | Native + token balances with contract addresses |
-| **🔐 Signed Report** | Full ECC-SHA512 signature, raw JSON export with download button |
+| **🔐 Signed Report** | Signed report metadata, CSV export, raw JSON export with download button |
+
+## Rupture Explainability
+
+Every rupture card now shows its complete reasoning:
+
+```
+┌─────────────────────────────────────────────┐
+│  HIGH                                         │
+│  Large Native Outbound Transfer               │
+│  🚨 Large outbound transfer: 8.5 ETH          │
+│  ┌──────────────────────────────────────┐     │
+│  │ Threshold: Value > 5 ETH              │     │
+│  │ Observed:  8.5 ETH                    │     │
+│  │ Counterparty: 0xDEF...                │     │
+│  │ Tx Hash:    0xabcd...                 │     │
+│  └──────────────────────────────────────┘     │
+│  Why it matters: High-value outflow from      │
+│  tracked owner wallet — may indicate a drain  │
+│  ─────────────────────────────────────────    │
+│  ethereum · rupture-eth-0xabcd...             │
+└─────────────────────────────────────────────┘
+```
+
+All flags are **heuristic suspicions, not forensic verdicts**.
+
+## Report Provenance
+
+Each report includes data-source metadata:
+- Chain (bitcoin / ethereum)
+- Provider (mempool.space / etherscan.io)
+- API endpoint used
+- Timestamp of data retrieval
+
+This gives each report forensic weight by documenting exactly where and when the data was sourced.
+
+## Address Aliases
+
+Known addresses are automatically labeled (zero address, dead address, WETH, Uniswap routers, Aave pools, major stablecoins, exchange wallets, etc.) so reports are more readable.
+
+## Case Persistence
+
+Investigations are saved to localStorage (last 5 cases). Click a saved case to reopen it without re-fetching blockchain data.
+
+## Filtering
+
+Timeline and Ruptures tabs include filter buttons:
+- By **chain** (BTC / ETH)
+- By **direction** (IN / OUT) — Timeline only
+- By **severity** (HIGH / MEDIUM / LOW) — Ruptures only
 
 ## Architecture
 
@@ -90,13 +139,17 @@ src/
 │   ├── chains/       BitcoinClient, EthereumClient (live API fetchers)
 │   └── crypto/       LegacyMint (ECC-SHA512 signing, browser-compatible)
 ├── engine/           AdamSinEngine (orchestrator + rupture heuristics)
-└── ui/               React app (Vite + tabs dashboard)
+└── ui/               React app (Vite + 5-tab dashboard)
 ```
 
 ## API keys
 
 - **BTC** — mempool.space API (no key required, CORS-enabled)
 - **ETH** — etherscan.io API (optional key for higher rate limits; works without one)
+
+## ⚠ Important disclaimer
+
+This tool performs **explorer-derived transaction analysis** with heuristic suspicion layers on top. It is **not** a forensic-grade investigation platform. All data comes from public block explorers (mempool.space, etherscan.io), not from a full node. Rupture flags are **signals, not verdicts**. Always verify findings against a full node before drawing conclusions.
 
 ## Scope & guarantees
 
